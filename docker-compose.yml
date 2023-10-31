@@ -1,0 +1,41 @@
+version: "3"
+
+services:
+  backend:
+    container_name: app-backend
+    build: 
+      dockerfile: Dockerfile
+      context: ./backend
+    depends_on:
+      - database
+    ports:
+      - "8080:8080"
+    volumes: 
+      - ./backend/:/app/backend
+    restart: unless-stopped
+  database:
+    container_name: app-db-mongo
+    image: mongo:4.2.24-bionic
+    restart: always
+    environment:
+      - MONGO_INITDB_ROOT_USERNAME=${DB_ADMIN_USERNAME}
+      - MONGO_INITDB_ROOT_PASSWORD=${DB_ADMIN_USERPASS}
+      - MONGO_INITDB_DATABASE=${DB_NAME}
+    volumes:
+      - ./mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+      - database:/data/db
+    ports:
+      - 27017:27017
+  database_manager:
+    container_name: app-db-manager
+    image: mongo-express
+    restart: always
+    ports:
+      - 8081:8081
+    environment:
+      - ME_CONFIG_MONGODB_URL=mongodb://${DB_ADMIN_USERNAME}:${DB_ADMIN_USERPASS}@database:27017/?authSource=admin
+volumes:
+  database:
+    name: db_mongo
+networks:
+  default:
